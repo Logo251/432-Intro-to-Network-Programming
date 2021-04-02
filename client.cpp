@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 
     int sd = socket( AF_INET, SOCK_STREAM,0 ); // creates a new socket for IP using TCP
 
-    connect(sd, (sockaddr*)&sendSock, sizeof(sendSock));
+    connect(sd, (sockaddr*)&sendSockAddr, sizeof(sendSockAddr));
 
     //---------------------------------
     //Allocate databuf[nbufs][bufsize].
