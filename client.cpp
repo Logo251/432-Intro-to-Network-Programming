@@ -9,13 +9,15 @@
 #include <sys/uio.h>      // writev
 #include <sys/time.h>     //gettimeofday
 #include <string>         //string
+#include <iostream>
+
 using namespace std;
 
 int main(int argc, char* argv[]) {
     //Local Variables
     //Variables from user input.
     int port = (int)*argv[0];
-    std::string repetition = to_string(*argv[1]);
+    int repetition = (int)*argv[1];
     int nbufs = (int)*argv[2];
     int bufsize = (int)*argv[3];
     char* serverIp = argv[4];
@@ -42,6 +44,7 @@ int main(int argc, char* argv[]) {
 
     //---------------------------------
     //Allocate databuf[nbufs][bufsize].
+    char databuf[nbufs][bufsize];
 
     //--------------------------------------
     //Start a timer by calling gettimeofday.
@@ -53,21 +56,27 @@ int main(int argc, char* argv[]) {
 
     //Type 1, multiple writes.
     if(type == 1) {
-        for ( int j = 0; j < nbufs; j++ )
-            write( sd, databuf[j], bufsize );    // sd: socket descriptor
+        for(int i = 0; i < repetition; i++) {
+            for ( int j = 0; j < nbufs; j++ )
+                write( sd, databuf[j], bufsize );    // sd: socket descriptor
+        }
     }
     //Type 2, writev
     else if(type == 2) {
         struct iovec vector[nbufs];
-        for ( int j = 0; j < nbufs; j++ ) {
-            vector[j].iov_base = databuf[j];
-            vector[j].iov_len = bufsize;
+        for(int i = 0; i < repetition; i++) {
+            for (int j = 0; j < nbufs; j++) {
+                vector[j].iov_base = databuf[j];
+                vector[j].iov_len = bufsize;
+            }
+            writev(sd, vector, nbufs);           // sd: socket descriptor
         }
-        writev( sd, vector, nbufs );           // sd: socket descriptor
     }
     //Type 3, single write
     else {
-        write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
+        for(int i = 0; i < repetition; i++) {
+            write(sd, databuf, nbufs * bufsize); // sd: socket descriptor
+        }
     }
 
     //-----------------------------------------------------------------------------
@@ -77,7 +86,8 @@ int main(int argc, char* argv[]) {
 
     //-------------------------------------------------------------------------------------------------------
     //Receive from the server an integer acknowledgement that shows how many times the server called read().
-
+    char buf[65535];
+    read(sd, buf, 65535);
 
     //-----------------------------------------------------------------------------
     //Stop the timer by calling gettimeofday, where stop - start = round-trip time.
@@ -87,6 +97,7 @@ int main(int argc, char* argv[]) {
     //-------------------------
     //Print out the statistics.
     //EXAMPLE: Test 1: data-sending time = xxx usec, round-trip time = yyy usec, #reads = zzz
+    std::cout << "Test " + to_string(type) + ": data-sending time = " + to_string(lapTime.tv_usec) + " usec, round-trip time = " + to_string(sendTime.tv_usec) + " usec, #reads = " + buf;
 
     //-------------
     //Close socket.
