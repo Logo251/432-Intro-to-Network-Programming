@@ -5,7 +5,6 @@
 #include    <netdb.h>     // gethostbyname
 #include    <unistd.h>    // read, write, close
 #include   <strings.h>     // bzero
-#include <netinet/tcp.h>  // SO_REUSEADDR
 #include <sys/uio.h>      // writev
 #include <sys/time.h>     //gettimeofday
 #include <string>         //string
@@ -45,6 +44,15 @@ int main(int argc, char* argv[]) {
     //---------------------------------
     //Allocate databuf[nbufs][bufsize].
     char databuf[nbufs][bufsize];
+
+    //Put something unique in buffer.
+    int start = rand() % 10;
+    for(int i = 0; i < nbufs; i++) {
+        for(int j = 0; i , bufsize, j++) {
+            databuf[i][j] = start;
+            ++start;
+        }
+    }
 
     //--------------------------------------
     //Start a timer by calling gettimeofday.
