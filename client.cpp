@@ -12,26 +12,28 @@
 
 using namespace std;
 
+const int BUFFERSIZE = 1500;
+
 int main(int argc, char* argv[]) {
     //Local Variables
     //Variables from user input.
-    int port = (int)*argv[0];
-    int repetition = (int)*argv[1];
-    int nbufs = (int)*argv[2];
-    int bufsize = (int)*argv[3];
-    char* serverIp = argv[4];
-    int type = (int)*argv[5];
+    int port = atoi(argv[1]);
+    int repetition = atoi(argv[2]);
+    int nbufs = atoi(argv[3]);
+    int bufsize = atoi(argv[4]);
+    char* serverIp = argv[5];
+    int type = atoi(argv[6]);
 
     //Other Variables
     timeval startTime;
     timeval lapTime;
     timeval sendTime;
+    char recievebuf[BUFFERSIZE] = { 0 };
+    sockaddr_in sendSockAddr;
+    struct hostent* host = gethostbyname(serverIp);
 
     //-----------------------------------------------------
     //Open new socket and establish connection to a server.
-    struct hostent* host = gethostbyname(serverIp);
-
-    sockaddr_in sendSockAddr;
     bzero((char*)&sendSockAddr, sizeof(sendSockAddr));
     sendSockAddr.sin_family = AF_INET; // Address Family Internet
     sendSockAddr.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr*)*host->h_addr_list));
@@ -46,9 +48,10 @@ int main(int argc, char* argv[]) {
     char databuf[nbufs][bufsize];
 
     //Put something unique in buffer.
+    srand (time(nullptr));
     int start = rand() % 10;
     for(int i = 0; i < nbufs; i++) {
-        for(int j = 0; i , bufsize, j++) {
+        for(int j = 0; j < bufsize; j++) {
             databuf[i][j] = start;
             ++start;
         }
@@ -66,7 +69,7 @@ int main(int argc, char* argv[]) {
     if(type == 1) {
         for(int i = 0; i < repetition; i++) {
             for ( int j = 0; j < nbufs; j++ )
-                write( sd, databuf[j], bufsize );    // sd: socket descriptor
+                write( sd, databuf[j], bufsize);
         }
     }
     //Type 2, writev
@@ -90,22 +93,22 @@ int main(int argc, char* argv[]) {
     //-----------------------------------------------------------------------------
     //Lap the timer by calling gettimeofday, where lap - start = data-sending time.
     gettimeofday(&lapTime, NULL);
-    timersub(&lapTime, &startTime, &lapTime);
+
 
     //-------------------------------------------------------------------------------------------------------
     //Receive from the server an integer acknowledgement that shows how many times the server called read().
-    char buf[65535];
-    read(sd, buf, 65535);
+    read(sd, recievebuf, BUFFERSIZE);
 
     //-----------------------------------------------------------------------------
     //Stop the timer by calling gettimeofday, where stop - start = round-trip time.
     gettimeofday(&sendTime, NULL);
-    timersub(&sendTime, &startTime, &sendTime);
 
     //-------------------------
     //Print out the statistics.
     //EXAMPLE: Test 1: data-sending time = xxx usec, round-trip time = yyy usec, #reads = zzz
-    std::cout << "Test " + to_string(type) + ": data-sending time = " + to_string(lapTime.tv_usec) + " usec, round-trip time = " + to_string(sendTime.tv_usec) + " usec, #reads = " + buf;
+    timersub(&lapTime, &startTime, &lapTime);
+    timersub(&sendTime, &startTime, &sendTime);
+    std::cout << "Test " + to_string(type) + ": data-sending time = " + to_string(lapTime.tv_usec) + " usec, round-trip time = " + to_string(sendTime.tv_usec) + " usec, #reads = " + recievebuf;
 
     //-------------
     //Close socket.
